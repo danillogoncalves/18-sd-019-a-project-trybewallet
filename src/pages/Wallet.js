@@ -1,7 +1,10 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
-import actionFetchCurrency from '../actions/actionsAsysc';
+import { actionFetchCurrency, actionFetchExpenses } from '../actions/actionsAsysc';
+
+const TAGS = ['Alimentação', 'Lazer', 'Trabalho', 'Transporte', 'Saúde'];
+const METHODS = ['Dinheiro', 'Cartão de crédito', 'Cartão de débito'];
 
 class Wallet extends React.Component {
   constructor(props) {
@@ -11,8 +14,9 @@ class Wallet extends React.Component {
       currencies: [],
       description: '',
       currency: '',
-      method: 'Dinheiro',
-      tag: 'Alimentação',
+      method: METHODS[0],
+      tag: TAGS[0],
+      isDisabled: true,
     };
   }
 
@@ -30,20 +34,56 @@ class Wallet extends React.Component {
     const { name, value } = target;
     this.setState({
       [name]: value,
-    });
+    }, () => this.validateButton());
   };
+
+  validateButton = () => {
+    const { value, description } = this.state;
+    this.setState({
+      isDisabled: !(value && description),
+    });
+  }
+
+  handleClick = async () => {
+    const {
+      getExpenseAndExchangeRate,
+    } = this.props;
+    const { value, description, currency, method, tag } = this.state;
+    await getExpenseAndExchangeRate({ value, description, currency, method, tag });
+    const { currencies } = this.props;
+    this.setState({
+      value: '',
+      description: '',
+      currency: currencies[0],
+      method: METHODS[0],
+      tag: TAGS[0],
+      isDisabled: true,
+    });
+  }
+
+  totalExpenses = () => {
+    const { expenses } = this.props;
+    if (expenses.length) {
+      return expenses.reduce((acc, curr) => {
+        const { value, currency, exchangeRates } = curr;
+        const sum = +value * +exchangeRates[currency].ask;
+        acc += sum;
+        return acc;
+      }, 0).toFixed(2);
+    }
+    return 0;
+  }
 
   render() {
     const { userEmail } = this.props;
-    const { value, currencies, description, currency, method, tag } = this.state;
-    const METHODS = ['Dinheiro', 'Cartão de crédito', 'Cartão de débito'];
-    const TAGS = ['Alimentação', 'Lazer', 'Trabalho', 'Transporte', 'Saúde'];
+    const { value, currencies, description,
+      currency, method, tag, isDisabled } = this.state;
     return (
       <div>
         <header>
           <h1>TrybeWallet</h1>
           <span data-testid="email-field">{ userEmail }</span>
-          <span data-testid="total-field">0</span>
+          <span data-testid="total-field">{this.totalExpenses()}</span>
           <span data-testid="header-currency-field">
             BRL
           </span>
@@ -112,6 +152,12 @@ class Wallet extends React.Component {
               ))}
             </select>
           </label>
+          <input
+            type="submit"
+            value="Adicionar despesa"
+            disabled={ isDisabled }
+            onClick={ this.handleClick }
+          />
         </div>
       </div>
     );
@@ -121,16 +167,20 @@ class Wallet extends React.Component {
 const mapStateToProps = (state) => ({
   userEmail: state.user.email,
   currencies: state.wallet.currencies,
+  expenses: state.wallet.expenses,
 });
 
 const mapDispatchToProps = (dispatch) => ({
-  getCodeCurrencies: (currencies) => dispatch(actionFetchCurrency(currencies)),
+  getCodeCurrencies: () => dispatch(actionFetchCurrency()),
+  getExpenseAndExchangeRate: (expense) => dispatch(actionFetchExpenses(expense)),
 });
 
 Wallet.propTypes = {
   userEmail: PropTypes.string.isRequired,
   getCodeCurrencies: PropTypes.func.isRequired,
+  getExpenseAndExchangeRate: PropTypes.func.isRequired,
   currencies: PropTypes.arrayOf(PropTypes.string).isRequired,
+  expenses: PropTypes.arrayOf(PropTypes.any).isRequired,
 };
 
 export default connect(mapStateToProps, mapDispatchToProps)(Wallet);
