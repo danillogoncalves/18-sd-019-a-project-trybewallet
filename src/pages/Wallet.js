@@ -75,7 +75,7 @@ class Wallet extends React.Component {
   }
 
   render() {
-    const { userEmail } = this.props;
+    const { userEmail, expenses } = this.props;
     const { value, currencies, description,
       currency, method, tag, isDisabled } = this.state;
     return (
@@ -159,6 +159,31 @@ class Wallet extends React.Component {
             onClick={ this.handleClick }
           />
         </div>
+        <table>
+          <tbody>
+            <tr>
+              <th>Descrição</th>
+              <th>Tag</th>
+              <th>Método de pagamento</th>
+              <th>Valor</th>
+              <th>Moeda</th>
+              <th>Câmbio utilizado</th>
+              <th>Valor convertido</th>
+              <th>Moeda de conversão</th>
+              <th>Editar/Excluir</th>
+            </tr>
+            {
+              expenses.map((expense) => (
+                <tr key={ expense.id }>
+                  <td>{ expense.description }</td>
+                  <td>{ expense.tag }</td>
+                  <td>{ expense.method }</td>
+                  <td>{ expense.value }</td>
+                </tr>
+              ))
+            }
+          </tbody>
+        </table>
       </div>
     );
   }
