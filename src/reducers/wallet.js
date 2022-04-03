@@ -1,4 +1,5 @@
-import { RECEIVE_CODE_CURRERY_SUCCESS, RECEIVE_OBJECT_SUCCESS } from '../actions';
+import { RECEIVE_CODE_CURRERY_SUCCESS,
+  RECEIVE_OBJECT_SUCCESS, DELETE_EXPENSE } from '../actions';
 
 // Esse reducer será responsável por tratar o todas as informações relacionadas as despesas
 const INITIAL_STATE = {
@@ -29,6 +30,14 @@ const wallet = (state = INITIAL_STATE, action) => {
         ...state.expenses,
         newExpenses,
       ],
+    };
+  }
+  case DELETE_EXPENSE: {
+    const newExpenses = action.expenses
+      .filter((expense) => +expense.id !== +action.deleteExpenseId);
+    return {
+      ...state,
+      expenses: newExpenses,
     };
   }
   default:

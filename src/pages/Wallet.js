@@ -2,6 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { actionFetchCurrency, actionFetchExpenses } from '../actions/actionsAsysc';
+import { deleteExpense } from '../actions';
 
 const TAGS = ['Alimentação', 'Lazer', 'Trabalho', 'Transporte', 'Saúde'];
 const METHODS = ['Dinheiro', 'Cartão de crédito', 'Cartão de débito'];
@@ -72,6 +73,11 @@ class Wallet extends React.Component {
       }, 0).toFixed(2);
     }
     return 0;
+  }
+
+  deleteExpenseClick = ({ target }) => {
+    const { expenses, getDeleteExpense } = this.props;
+    getDeleteExpense(expenses, target.id);
   }
 
   render() {
@@ -186,6 +192,15 @@ class Wallet extends React.Component {
                    * (+expense.exchangeRates[expense.currency].ask)).toFixed(2) }
                   </td>
                   <td>Real</td>
+                  <td>
+                    <input
+                      data-testid="delete-btn"
+                      type="button"
+                      value="Excluir"
+                      id={ expense.id }
+                      onClick={ this.deleteExpenseClick }
+                    />
+                  </td>
                 </tr>
               ))
             }
@@ -205,12 +220,14 @@ const mapStateToProps = (state) => ({
 const mapDispatchToProps = (dispatch) => ({
   getCodeCurrencies: () => dispatch(actionFetchCurrency()),
   getExpenseAndExchangeRate: (expense) => dispatch(actionFetchExpenses(expense)),
+  getDeleteExpense: (...payload) => dispatch(deleteExpense(...payload)),
 });
 
 Wallet.propTypes = {
   userEmail: PropTypes.string.isRequired,
   getCodeCurrencies: PropTypes.func.isRequired,
   getExpenseAndExchangeRate: PropTypes.func.isRequired,
+  getDeleteExpense: PropTypes.func.isRequired,
   currencies: PropTypes.arrayOf(PropTypes.string).isRequired,
   expenses: PropTypes.arrayOf(PropTypes.any).isRequired,
 };
