@@ -1,5 +1,5 @@
 import { RECEIVE_CODE_CURRERY_SUCCESS,
-  RECEIVE_OBJECT_SUCCESS, DELETE_EXPENSE } from '../actions';
+  RECEIVE_OBJECT_SUCCESS, DELETE_EXPENSE, EDIT_EXPENSE } from '../actions';
 
 // Esse reducer será responsável por tratar o todas as informações relacionadas as despesas
 const INITIAL_STATE = {
@@ -38,6 +38,17 @@ const wallet = (state = INITIAL_STATE, action) => {
     return {
       ...state,
       expenses: newExpenses,
+    };
+  }
+  case EDIT_EXPENSE: {
+    const { value, description, currency, method, tag } = action.expense;
+    state.expenses[+action.editExpenseIndex].value = value;
+    state.expenses[+action.editExpenseIndex].description = description;
+    state.expenses[+action.editExpenseIndex].currency = currency;
+    state.expenses[+action.editExpenseIndex].method = method;
+    state.expenses[+action.editExpenseIndex].tag = tag;
+    return {
+      ...state,
     };
   }
   default:

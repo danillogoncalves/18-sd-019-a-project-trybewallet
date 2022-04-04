@@ -2,7 +2,9 @@ import React from 'react';
 import { connect } from 'react-redux';
 import PropTypes from 'prop-types';
 import { actionFetchCurrency, actionFetchExpenses } from '../actions/actionsAsysc';
-import { deleteExpense } from '../actions';
+import { deleteExpense, editExpense } from '../actions';
+import Header from '../Component/Header';
+import TableExpenses from '../Component/TableExpenses';
 
 const TAGS = ['Alimentação', 'Lazer', 'Trabalho', 'Transporte', 'Saúde'];
 const METHODS = ['Dinheiro', 'Cartão de crédito', 'Cartão de débito'];
@@ -12,12 +14,12 @@ class Wallet extends React.Component {
     super(props);
     this.state = {
       value: '',
-      currencies: [],
       description: '',
       currency: '',
       method: METHODS[0],
       tag: TAGS[0],
       isDisabled: true,
+      buttonEdit: '',
     };
   }
 
@@ -26,7 +28,6 @@ class Wallet extends React.Component {
     await getCodeCurrencies();
     const { currencies } = this.props;
     this.setState({
-      currencies,
       currency: currencies[0],
     });
   }
@@ -46,9 +47,7 @@ class Wallet extends React.Component {
   }
 
   handleClick = async () => {
-    const {
-      getExpenseAndExchangeRate,
-    } = this.props;
+    const { getExpenseAndExchangeRate } = this.props;
     const { value, description, currency, method, tag } = this.state;
     await getExpenseAndExchangeRate({ value, description, currency, method, tag });
     const { currencies } = this.props;
@@ -75,25 +74,49 @@ class Wallet extends React.Component {
     return 0;
   }
 
-  deleteExpenseClick = ({ target }) => {
+  deleteExpenseClick = (id) => {
     const { expenses, getDeleteExpense } = this.props;
-    getDeleteExpense(expenses, target.id);
+    getDeleteExpense(expenses, id);
+  }
+
+  editExpenseClick = (id) => {
+    const { expenses } = this.props;
+    expenses.forEach((expense, index) => {
+      if (expense.id === +id) {
+        this.setState({
+          value: expense.value,
+          description: expense.description,
+          currency: expense.currency,
+          method: expense.method,
+          tag: expense.tag,
+          buttonEdit: index,
+        });
+      }
+    });
+  }
+
+  handleEditExpense = ({ target }) => {
+    const { value, description, currency, method, tag } = this.state;
+    const { currencies, getEditExpense } = this.props;
+    getEditExpense({ value, description, currency, method, tag }, target.value);
+    this.setState({
+      value: '',
+      description: '',
+      currency: currencies[0],
+      method: METHODS[0],
+      tag: TAGS[0],
+      isDisabled: true,
+      buttonEdit: '',
+    });
   }
 
   render() {
-    const { userEmail, expenses } = this.props;
-    const { value, currencies, description,
+    const { userEmail, expenses, currencies } = this.props;
+    const { value, description, buttonEdit,
       currency, method, tag, isDisabled } = this.state;
     return (
       <div>
-        <header>
-          <h1>TrybeWallet</h1>
-          <span data-testid="email-field">{ userEmail }</span>
-          <span data-testid="total-field">{this.totalExpenses()}</span>
-          <span data-testid="header-currency-field">
-            BRL
-          </span>
-        </header>
+        <Header userEmail={ userEmail } totalExpenses={ this.totalExpenses } />
         <div>
           <label htmlFor="valueId">
             Valor:
@@ -120,6 +143,7 @@ class Wallet extends React.Component {
           <label htmlFor="currencyId">
             Moeda:
             <select
+              data-testid="currency-input"
               id="currencyId"
               name="currency"
               value={ currency }
@@ -158,54 +182,33 @@ class Wallet extends React.Component {
               ))}
             </select>
           </label>
-          <input
-            type="submit"
-            value="Adicionar despesa"
-            disabled={ isDisabled }
-            onClick={ this.handleClick }
-          />
+          {
+            buttonEdit !== ''
+              ? (
+                <button
+                  type="button"
+                  value={ buttonEdit }
+                  disabled={ isDisabled }
+                  onClick={ this.handleEditExpense }
+                >
+                  Editar despesa
+                </button>
+              )
+              : (
+                <input
+                  type="submit"
+                  value="Adicionar despesa"
+                  disabled={ isDisabled }
+                  onClick={ this.handleClick }
+                />
+              )
+          }
         </div>
-        <table>
-          <tbody>
-            <tr>
-              <th>Descrição</th>
-              <th>Tag</th>
-              <th>Método de pagamento</th>
-              <th>Valor</th>
-              <th>Moeda</th>
-              <th>Câmbio utilizado</th>
-              <th>Valor convertido</th>
-              <th>Moeda de conversão</th>
-              <th>Editar/Excluir</th>
-            </tr>
-            {
-              expenses.map((expense) => (
-                <tr key={ expense.id }>
-                  <td>{ expense.description }</td>
-                  <td>{ expense.tag }</td>
-                  <td>{ expense.method }</td>
-                  <td>{ (+expense.value).toFixed(2) }</td>
-                  <td>{ expense.exchangeRates[expense.currency].name }</td>
-                  <td>{ (+expense.exchangeRates[expense.currency].ask).toFixed(2) }</td>
-                  <td>
-                    { ((+expense.value)
-                   * (+expense.exchangeRates[expense.currency].ask)).toFixed(2) }
-                  </td>
-                  <td>Real</td>
-                  <td>
-                    <input
-                      data-testid="delete-btn"
-                      type="button"
-                      value="Excluir"
-                      id={ expense.id }
-                      onClick={ this.deleteExpenseClick }
-                    />
-                  </td>
-                </tr>
-              ))
-            }
-          </tbody>
-        </table>
+        <TableExpenses
+          expenses={ expenses }
+          editExpenseClick={ this.editExpenseClick }
+          deleteExpenseClick={ this.deleteExpenseClick }
+        />
       </div>
     );
   }
@@ -221,6 +224,7 @@ const mapDispatchToProps = (dispatch) => ({
   getCodeCurrencies: () => dispatch(actionFetchCurrency()),
   getExpenseAndExchangeRate: (expense) => dispatch(actionFetchExpenses(expense)),
   getDeleteExpense: (...payload) => dispatch(deleteExpense(...payload)),
+  getEditExpense: (...payload) => dispatch(editExpense(...payload)),
 });
 
 Wallet.propTypes = {
@@ -228,6 +232,7 @@ Wallet.propTypes = {
   getCodeCurrencies: PropTypes.func.isRequired,
   getExpenseAndExchangeRate: PropTypes.func.isRequired,
   getDeleteExpense: PropTypes.func.isRequired,
+  getEditExpense: PropTypes.func.isRequired,
   currencies: PropTypes.arrayOf(PropTypes.string).isRequired,
   expenses: PropTypes.arrayOf(PropTypes.any).isRequired,
 };
